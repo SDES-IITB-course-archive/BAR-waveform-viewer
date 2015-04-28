@@ -47,7 +47,7 @@
 	})
 	.drop(function(e) {
 	e.preventDefault();
-	this.text('dropped');
+	this.text('Added');
 	var selected = (e.dataTransfer.getData('text/plain')).split("\n");
 	
 	for(i=0;i<selected.length;i++)
@@ -65,19 +65,25 @@
 			//alert(data1);
             var chart = new CanvasJS.Chart("chartContainer",
             {
+			//backgroundColor: "#000000",
             zoomEnabled: true,
             panEnabled: true, 
             title:{
-                text: "BAR waveform viewer" 
+                text: "BAR waveform viewer",
+                //fontColor: "White"
             },
            legend: {
-       horizontalAlign: "left"  // "center" , "right"
-  //     verticalAlign: "center",  // "top" , "bottom"
+			   //fontColor: "white",
+     //  horizontalAlign: "left"  // "center" , "right"
+       //verticalAlign: "bottom",  // "top" , "bottom"
+       fontSize: 15,
 
      },
      
 			      axisX:{
+					  titleFontSize: 23,
 			title: "Time (in micro seconds)",
+			labelFontColor: "black",
 				},
             axisY:{
                 includeZero: true,
@@ -98,6 +104,6 @@
 			//var uniquedata = data1.filter(function(item, i, ar){ return ar.indexOf(item) === i; });
 			displaybar(data1);}
 	</script>	</br>
-<div id="chartContainer" style="height: 550px; width: 950px ;">
+<div id="chartContainer" style="height: 650px; width: 950px ;">
 </body>
 </html>
