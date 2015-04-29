@@ -17,7 +17,9 @@
 	//style: { fontSize: '25px', textAlign: 'center' },
 	//background: 'cssBox(border:2px dashed #CCC; background:#EEE)', name: 'target' }
 	
-	{ view: 'Label', rect: '1000 100 50 500', anchors: 'left top', name: 'target' }
+	{ view: 'Label', rect: '1000 100 50 500', anchors: 'left top', text: 'Drop here',
+	style: { fontSize: '12px', textAlign: 'center' },
+    background: 'cssBox(border:2px dashed #CCC)', name: 'target' }
 	]).attachTo(window);
 	var data = {{ signals|safe }}
 	

@@ -1,4 +1,3 @@
-import re
 
 class vcd_reader:
     """vcd_reader is the class which parses the vcd file
@@ -33,7 +32,6 @@ class vcd_reader:
         Calls read_file function and parses the entire file.
         mainly, 9signal_symbol dictionary and transition dictionary are created"""
         self.transitions_dict=self.read_file(file_content)
-        #pass
         
     def read_file(self,file_content):
         """Parses the file and returns the signal-symbol pair and transition history"""
@@ -41,9 +39,6 @@ class vcd_reader:
         transition_dict={}
         current_scope='' #indicates the current level, as to what level in the module we are
         change_dump_started=0 #indicates when to start reading the file
-        #with open(file_name) as f:
-            #file_content=f.readlines()
-            #change_dump_started=0 #indicates when to start reading the file
         for line_no in range(len(file_content)):
             if re.match('^\$date',file_content[line_no]):
                 self.date=file_content[line_no+1]
@@ -57,11 +52,9 @@ class vcd_reader:
                 timescale_dict={'fs':1e-15,'ps':1e-12,'ns':1e-9,'us':1e-6,'ms':1e-3}
                 if matchObj:
                     timescale=float(matchObj.group(1))*timescale_dict[matchObj.group(2)]
-                    #print timescale
             matchObj=re.match(r'^\$scope\s+module\s+(\w+)\s+\$end',file_content[line_no])
             if matchObj:
                 current_scope=current_scope+'/'+matchObj.group(1)
-                #print current_scope
             matchObj=re.match(r'^\$upscope',file_content[line_no])
             if matchObj:
                 try:
@@ -74,12 +67,9 @@ class vcd_reader:
                 for scope in range(len(scopes)-1):
                     if scopes[scope]!='':
                         current_scope=current_scope+'/'+scopes[scope]
-                #print current_scope
             matchObj=re.match(r'^\$var\s+(\w+)\s+(\d+)\s+(\S+?)\s+(\S+)\s+\$end$', file_content[line_no])
             #reading the lines starting with var and assigning to signal_symbol_dict
             if matchObj:
-                #print matchObj.group(3)
-                #print matchObj.group(2)
                 current_signal=current_scope+'/'+matchObj.group(4)
                 self.signal_symbol_dict[current_signal]=matchObj.group(3)
                 transition_dict[matchObj.group(3)]=[[],[]]
@@ -89,7 +79,6 @@ class vcd_reader:
             if matchObj or matchObj2:
                 change_dump_started=1
                 timestamp=0
-                #print "Change dump started"
 
             matchObj=re.match(r'^\#(\d+)', file_content[line_no])
             if matchObj:
@@ -133,7 +122,6 @@ class vcd_reader:
         dict_to_return={}
         for sig in symbols_queried.values():
             dict_to_return[sig]=[[],[]]
-            #sym=self.signal_symbol_dict[sig]
             timestamps=self.transitions_dict[sig][0]
             for index in range(len(timestamps)-1):
                 if timestamps[index]>start_time and timestamps[index]<stop_time:
@@ -154,41 +142,85 @@ class vcd_reader:
         symbols_queried=self.symbols(array_of_names)
         dict_to_return={}
         for sig in symbols_queried.values():
-            #print sig
             for i in range(len(self.transitions_dict[sig][0])):
                 time=self.transitions_dict[sig][0][i]
                 if time<timestamp:
                     value=self.transitions_dict[sig][1][i]
                 else:
-                    #print sig,value
                     break
             dict_to_return[sig]=value
         return dict_to_return
         
     def create_json_to_display_waveforms(self,array_of_names,signal_symbol_dict,transitions_dict):
-        dict_to_return={}
-        voltage_val=0;
-        json_string='{"type":"line","dataPoints":[';       
-        for name in array_of_names:
-			json_string='{"name":"'+name+'","showInLegend": "true",'
+		dict_to_return={}
+		voltage_val=0
+		for name in array_of_names:
+			matchObj=re.match(r'^.+\d+\]$', name)
+			if matchObj:
+				bus=1
+			else:
+				bus=0
+			json_string='{"name":"'+name+'","showInLegend": "true","toolTipContent":"'+name+',{x}","markerType": "none",'
 			json_string=json_string+'"type":"line","dataPoints":['
 			symbol=self.signal_symbol_dict[name]
 			x_y_pairs=[]
 			for i in range(len(self.transitions_dict[symbol][0])-1):
-				#print self.transitions_dict[symbol][1][i]
-				x_y_pairs.append((self.transitions_dict[symbol][0][i],str(int(self.transitions_dict[symbol][1][i])+voltage_val)))
-				x_y_pairs.append((self.transitions_dict[symbol][0][i+1],str(int(self.transitions_dict[symbol][1][i])+voltage_val)))
-			x_y_pairs.append((self.transitions_dict[symbol][0][len(self.transitions_dict[symbol][0])-1],str(int(self.transitions_dict[symbol][1][len(self.transitions_dict[symbol][0])-1])+voltage_val)))
-			x_y_pairs.append((self.end_time,str(int(self.transitions_dict[symbol][1][len(self.transitions_dict[symbol][0])-1])+voltage_val)))
-			# creating string in json object
-			for time,val in x_y_pairs:
-				json_string=json_string+'{"x":'+str(time)+',"y":'+val+'}'
-				if x_y_pairs[-1]==(time,val):
-					break
+				if bus==0:
+					x_y_pairs.append((self.transitions_dict[symbol][0][i],str(int(self.transitions_dict[symbol][1][i])+voltage_val)))
+					x_y_pairs.append((self.transitions_dict[symbol][0][i+1],str(int(self.transitions_dict[symbol][1][i])+voltage_val)))
 				else:
+					x_y_pairs.append((self.transitions_dict[symbol][0][i],str(int(self.transitions_dict[symbol][1][i]))))
+					x_y_pairs.append((self.transitions_dict[symbol][0][i+1],str(int(self.transitions_dict[symbol][1][i]))))
+			if bus==0:
+				x_y_pairs.append((self.transitions_dict[symbol][0][len(self.transitions_dict[symbol][0])-1],str(int(self.transitions_dict[symbol][1][len(self.transitions_dict[symbol][0])-1])+voltage_val)))
+				x_y_pairs.append((self.end_time,str(int(self.transitions_dict[symbol][1][len(self.transitions_dict[symbol][0])-1])+voltage_val)))
+			else:
+				x_y_pairs.append((self.transitions_dict[symbol][0][len(self.transitions_dict[symbol][0])-1],str(int(self.transitions_dict[symbol][1][len(self.transitions_dict[symbol][0])-1]))))
+				x_y_pairs.append((self.end_time,str(int(self.transitions_dict[symbol][1][len(self.transitions_dict[symbol][0])-1]))))
+			# creating string in json object
+			bus_bit=0
+			previous_val=x_y_pairs[0][1]
+			for time,val in x_y_pairs:
+				if bus==0:
+					json_string=json_string+'{"x":'+str(time/1000000)+',"y":'+val+'}'
+					if x_y_pairs[-1]==(time,val):
+						break
+					else:
+						json_string=json_string+','
+				else:
+					bus_val=hex(int(str(int(float(val))),2))
+					if previous_val!=val:
+						bus_bit=1-bus_bit
+						time=time+1000000
+					else:
+						if time!=x_y_pairs[-1][0] and time!=x_y_pairs[0][0]:
+							time=time-1000000
+							bus_val=''
+					json_string=json_string+'{"x":'+str(time/1000000)+',"y":'+str(bus_bit+voltage_val)+',"indexLabel": "'+bus_val+'","indexLabelLineThickness":1,"indexLabelMaxWidth": 1,"indexLabelFontSize": 14,"indexLabelFontColor": "black"}'
+					previous_val=val
 					json_string=json_string+','
+			if bus==0:
 				json_string=json_string+']}'
-			print json_string
-			voltage_val=voltage_val+1.25
+			else:
+				bus_bit=1-bus_bit
+				for time,val in reversed(x_y_pairs):
+					if previous_val!=val:
+						bus_bit=1-bus_bit
+						time=time-1000000
+						if time<0:
+							time=0
+					else:
+						if time!=x_y_pairs[-1][0] and time!=x_y_pairs[0][0]:
+							time=time+1000000
+					json_string=json_string+'{"x":'+str(time/1000000)+',"y":'+str(bus_bit+voltage_val)+'}'
+					previous_val=val
+					if time!=x_y_pairs[0][0]:
+						json_string=json_string+','
+					else:
+						json_string=json_string+']}'
+			voltage_val=voltage_val+2
 			dict_to_return[name]=json_string
-	return(dict_to_return)
+		return(dict_to_return)
+
+if __name__ == "__main__":
+    main()
